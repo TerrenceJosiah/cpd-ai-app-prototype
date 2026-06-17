@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CPDassist — prototype</title>
+<style>
+  :root{
+    --navy:#2E4159; --cream:#FAF8E9;
+    --ink:#1E2A38; --muted:#6E7780; --border:#E2E5EA;
+    --card:#FFFFFF; --statbg:#EFEEE9;
+    --green:#34A864; --green-bg:#E7F5EC;
+    --amber:#B8791A; --amber-bg:#FBF1DC; --amber-bd:#EBD49B;
+    --ai:#4A3F9E; --ai-bg:#EDE9FB;
+    --barTotal:#2E4159; --barPart:#5B6FC0; --barInc:#AEB8E8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:#D9DEE4;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink)}
+  .frame{max-width:430px;margin:0 auto;background:#fff;min-height:100vh;position:relative;overflow:hidden}
+  @media(min-width:480px){.frame{margin:20px auto;min-height:calc(100vh - 40px);border-radius:30px;
+    box-shadow:0 12px 44px rgba(30,42,56,.22)}}
+  .statusbar{display:flex;justify-content:space-between;font-size:12px;padding:8px 18px 2px}
+  .scr{display:none}
+  .scr.active{display:block;animation:fade .22s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .navhd{background:var(--navy);color:#fff;position:sticky;top:0;z-index:5}
+  .navhd .statusbar{color:#fff;opacity:.85}
+  .navrow{display:flex;align-items:center;gap:10px;padding:6px 16px 14px}
+  .back{cursor:pointer;display:flex;align-items:center}
+  .navttl{font-size:17px;font-weight:600;flex:1;text-align:center;margin-right:32px}
+  .step{font-size:12px;color:var(--muted);font-weight:500}
+
+  .body{padding:18px 16px 30px}
+  h2{font-size:21px;margin:2px 0 4px;font-weight:600;line-height:1.25}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.45}
+  .chip{display:inline-block;background:#EAF0F6;color:var(--navy);font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px}
+  .chip.ai{background:var(--ai-bg);color:var(--ai)}
+
+  /* dashboard */
+  .hero{background:var(--cream);position:relative;overflow:hidden;padding-bottom:10px}
+  .c1{position:absolute;width:230px;height:230px;border-radius:50%;background:#8C84D8;top:-70px;right:-40px;opacity:.9}
+  .c2{position:absolute;width:170px;height:170px;border-radius:50%;background:#AEB7E6;top:-20px;right:-70px}
+  .dashtop{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 0;position:relative;z-index:2}
+  .dashtop .ttl{font-size:20px;font-weight:700;position:absolute;left:0;right:0;text-align:center}
+  .badge{width:62px;height:62px;border-radius:14px;background:#49B0E8;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:8px;font-weight:700;text-align:center;line-height:1.2;position:relative;border:2px solid #fff}
+  .shield{position:absolute;top:-6px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--green);
+    display:flex;align-items:center;justify-content:center;color:#fff;border:2px solid var(--cream)}
+  .greet{font-size:19px;font-weight:600;padding:14px 18px 6px;position:relative;z-index:2}
+
+  .navy-area{background:var(--navy);padding:18px 14px 96px}
+  .statcard{background:var(--statbg);border-radius:18px;padding:16px 10px 18px}
+  .statcard .mhead{text-align:center;font-size:16px;color:var(--ink);margin:0 0 10px}
+  .statrow{display:flex}
+  .statrow .col{flex:1;text-align:center}
+  .statrow .n{font-size:34px;font-weight:700;line-height:1}
+  .statrow .l{font-size:12px;color:#4a4a48;margin-top:6px}
+  .dots{display:flex;gap:8px;justify-content:center;padding:14px 0}
+  .dots i{width:9px;height:9px;border-radius:50%;background:#9aa6b3}
+  .dots i.on{background:#fff}
+  .chartcard{background:var(--card);border-radius:18px;padding:16px 14px 10px}
+  .chartcard h3{font-size:17px;text-align:center;margin:4px 0 12px;font-weight:600}
+  .legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--ink);padding:8px 0 4px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend i{width:13px;height:13px;border-radius:3px;display:inline-block}
+
+  .tabbar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);
+    display:flex;align-items:flex-end;justify-content:space-around;padding:8px 6px 14px;z-index:6}
+  .tab{flex:1;text-align:center;color:#9aa6b3;font-size:11px;cursor:pointer}
+  .tab.on{color:var(--navy)}
+  .tab svg{width:22px;height:22px;display:block;margin:0 auto 3px}
+  .fab{width:58px;height:58px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;
+    justify-content:center;margin:-26px auto 0;box-shadow:0 6px 16px rgba(46,65,89,.4);cursor:pointer}
+  .fab svg{width:28px;height:28px}
+
+  /* shared controls */
+  .aff{flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 6px;text-align:center;cursor:pointer;transition:.15s}
+  .aff:active{transform:scale(.97)}
+  .aff svg{width:26px;height:26px;color:var(--navy)}
+  .aff span{display:block;font-size:13px;margin-top:8px}
+  .row{display:flex;gap:10px}
+  .lbl{font-size:11px;color:var(--muted);margin:20px 0 8px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+  .item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px}
+  .item svg.lead{width:20px;height:20px;color:var(--navy);flex:none}
+  .item .meta{flex:1;min-width:0}.item .nm{font-size:14px;font-weight:500}
+  .item .mn{font-size:12px;color:var(--muted);margin-top:2px}
+  .del{cursor:pointer;color:var(--muted);flex:none}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:22px;border:1px dashed var(--border);border-radius:12px}
+
+  .opt-radio{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--border);
+    border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer}
+  .opt-radio.sel{border-color:var(--navy);background:#F4F7FA}
+  .ring{width:22px;height:22px;border-radius:50%;border:2px solid #C3CAD3;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center}
+  .opt-radio.sel .ring{border-color:var(--navy)}
+  .opt-radio.sel .ring::after{content:"";width:11px;height:11px;border-radius:50%;background:var(--navy)}
+  .opt-radio .gn{font-size:15px;font-weight:600}
+  .opt-radio .gf{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .note{display:flex;gap:9px;align-items:flex-start;background:#EFF3F7;border-radius:12px;padding:12px;font-size:12.5px;color:#3A434E;line-height:1.45;margin:4px 0 18px}
+  .note svg{width:17px;height:17px;flex:none;color:var(--navy)}
+
+  .qcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+  .qcard .q{font-size:14px;font-weight:600;margin:0 0 10px;line-height:1.35}
+  .micbtn{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--navy);border:1px solid #C3CAD3;border-radius:22px;padding:8px 13px;cursor:pointer;background:none;font-family:inherit}
+  .micbtn svg{width:16px;height:16px}
+  .answered{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green);margin-bottom:8px}
+  .answered svg{width:15px;height:15px}
+  textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px;font-family:inherit;font-size:13px;resize:vertical;min-height:56px;color:var(--ink);margin-top:8px}
+  textarea:focus{outline:none;border-color:var(--navy)}
+
+  .fld{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:10px}
+  .fld .k{font-size:11px;color:var(--muted)}
+  .fld .ph{font-size:14px;color:#AEB4BB;margin-top:4px}
+  .attest{display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;margin:16px 0;cursor:pointer}
+  .ck{width:22px;height:22px;border-radius:6px;border:2px solid #C3CAD3;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;transition:.15s}
+  .ck.on{background:var(--green);border-color:var(--green)}
+  .ck svg{width:14px;height:14px;opacity:0}.ck.on svg{opacity:1}
+  .attest .txt{font-size:12px;color:#3A434E;line-height:1.45}
+
+  .cta{background:var(--navy);color:#fff;text-align:center;padding:15px;border-radius:26px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:.15s}
+  .cta:active{transform:scale(.99)}
+  .cta.ghost{background:none;color:var(--navy);border:1px solid #C3CAD3;margin-top:10px}
+
+  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:22px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:30}
+  .toast.show{opacity:1}
+  .sheetbg{position:fixed;inset:0;background:rgba(20,28,38,.5);display:none;align-items:flex-end;z-index:20}
+  .sheetbg.open{display:flex}
+  .sheet{background:#fff;width:100%;max-width:430px;margin:0 auto;border-radius:24px 24px 0 0;padding:16px 14px 30px}
+  .sheet h3{font-size:18px;margin:6px 4px 16px;font-weight:600}
+  .sheet .o{display:flex;align-items:center;gap:13px;padding:16px;border-radius:14px;margin-bottom:10px;color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+  .sheet .o svg{width:22px;height:22px;flex:none}
+  .sheetclose{text-align:center;color:var(--muted);font-size:14px;padding:6px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- shared nav header (flow screens only) -->
+  <div class="navhd" id="navhd" style="display:none">
+    <div class="statusbar"><span>16:14</span><span>&#9679;&#9679;&#9679; &nbsp; &#9728; &nbsp; 67%</span></div>
+    <div class="navrow">
+      <span class="back" onclick="back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="22" height="22"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span class="navttl" id="navttl">Governing body</span>
+    </div>
+  </div>
+
+  <!-- HOME / DASHBOARD -->
+  <section class="scr active" id="s-home">
+    <div class="hero">
+      <div class="statusbar"><span>16:14</span><span>&#9679;&#9679;&#9679; &nbsp; &#9728; &nbsp; 67%</span></div>
+      <div class="c1"></div><div class="c2"></div>
+      <div class="dashtop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" width="26" height="26"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 00-2-1.2l-.3-2.5H10.7l-.3 2.5a7 7 0 00-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 005 12a7 7 0 00.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 002 1.2l.3 2.5h2.6l.3-2.5a7 7 0 002-1.2l2.3 1 2-3.4-2-1.5A7 7 0 0019 12z"/></svg>
+        <span class="ttl">Dashboard</span>
+        <div class="badge">XERO<br>CERTIFIED<div class="shield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="13" height="13"><path d="M5 12l4 4 10-10"/></svg></div></div>
+      </div>
+      <div class="greet">Good Afternoon terrence</div>
+    </div>
+
+    <div class="navy-area">
+      <div class="statcard">
+        <p class="mhead">Month</p>
+        <div class="statrow">
+          <div class="col"><div class="n">92</div><div class="l">Hours Logged</div></div>
+          <div class="col"><div class="n">29</div><div class="l">Total Entries</div></div>
+          <div class="col"><div class="n">29</div><div class="l">Diary Entries</div></div>
+          <div class="col"><div class="n">0</div><div class="l">Reflections</div></div>
+        </div>
+      </div>
+      <div class="dots"><i class="on"></i><i></i><i></i></div>
+      <div class="chartcard">
+        <h3>Entries over the Last 12 Months</h3>
+        <svg viewBox="0 0 340 230" width="100%">
+          <g stroke="#E2E5EA" stroke-width="1">
+            <line x1="40" y1="200" x2="332" y2="200"/><line x1="40" y1="140" x2="332" y2="140"/>
+            <line x1="40" y1="80" x2="332" y2="80"/><line x1="40" y1="20" x2="332" y2="20"/>
+          </g>
+          <g fill="#6E7780" font-size="12" font-family="sans-serif" text-anchor="end">
+            <text x="32" y="204">0</text><text x="32" y="144">10</text><text x="32" y="84">20</text><text x="32" y="24">30</text>
+          </g>
+          <rect x="305" y="166" width="14" height="34" fill="#AEB8E8"/>
+          <rect x="305" y="58"  width="14" height="108" fill="#5B6FC0"/>
+          <rect x="305" y="32"  width="14" height="26" fill="#2E4159"/>
+          <g fill="#6E7780" font-size="11" font-family="sans-serif" text-anchor="middle">
+            <text x="52" y="218">Jul</text><text x="76" y="218">Aug</text><text x="100" y="218">Sep</text>
+            <text x="124" y="218">Oct</text><text x="148" y="218">Nov</text><text x="172" y="218">Dec</text>
+            <text x="196" y="218">Jan</text><text x="220" y="218">Feb</text><text x="244" y="218">Mar</text>
+            <text x="268" y="218">Apr</text><text x="290" y="218">May</text><text x="312" y="218">Jun</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#2E4159"></i>Total</span>
+          <span><i style="background:#5B6FC0"></i>Partially Incomplete</span>
+          <span><i style="background:#AEB8E8"></i>Incomplete</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabbar">
+      <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 11l8-7 8 7M6 10v9h12v-9"/></svg>Home</div>
+      <div class="tab" onclick="toast('Prototype: Entries not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg>Entries</div>
+      <div class="fab" onclick="openSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="tab" onclick="toast('Prototype: Events not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Events</div>
+      <div class="tab" onclick="toast('Prototype: CPD not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h12v16l-6-3-6 3z"/></svg>CPD</div>
+    </div>
+  </section>
+
+  <!-- STEP 1: GOVERNING BODY -->
+  <section class="scr" id="s-gb">
+    <div class="body">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><span class="step">Step 1 of 4</span></div>
+      <h2 id="gbQ">Is HCPC your intended governing body for this entry?</h2>
+      <p class="sub">We'll tailor the entry to that body's requirements.</p>
+      <div class="note" id="gbNote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v.5M12 11v5"/></svg><span id="gbNoteTxt"></span></div>
+
+      <div id="gbPick" style="display:none"></div>
+
+      <div id="gbButtons">
+        <div class="cta" onclick="gbYes()">Yes, continue</div>
+        <div class="cta ghost" onclick="gbNo()">No, choose another body</div>
+      </div>
+      <div class="cta" id="gbNext" style="display:none" onclick="go('evidence')">Next</div>
+    </div>
+  </section>
+
+  <!-- STEP 2: EVIDENCE -->
+  <section class="scr" id="s-evidence">
+    <div class="body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span class="chip" id="evBody">HCPC</span><span class="step">Step 2 of 4</span>
+      </div>
+      <h2>Add your evidence</h2>
+      <p class="sub">Scan a document or photo, or attach a file. Add as many as you like.</p>
+      <div class="row">
+        <div class="aff" onclick="addEv('scan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M8 6l1.5-2h5L16 6"/></svg><span>Scan / photo</span></div>
+        <div class="aff" onclick="addEv('file')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 12.5l-8.5 8.5a5 5 0 01-7-7l9-9a3.5 3.5 0 015 5l-9 9a2 2 0 01-3-3l8-8"/></svg><span>Attach file</span></div>
+      </div>
+      <p class="lbl">Evidence added</p>
+      <div id="evList"><div class="empty">Nothing yet — scan a document or attach a file above.</div></div>
+      <div class="cta" onclick="goQuestions()">Continue</div>
+    </div>
+  </section>
+
+  <!-- STEP 3: QUESTIONS -->
+  <section class="scr" id="s-questions">
+    <div class="body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span class="chip" id="qBody">HCPC</span><span class="step">Step 3 of 4</span>
+      </div>
+      <h2>Your reflection</h2>
+      <p class="sub" id="qSub">Answer in your own words — speak or type. These questions follow your governing body.</p>
+      <div id="qList"></div>
+      <div class="cta" onclick="go('review')">Continue to review</div>
+    </div>
+  </section>
+
+  <!-- STEP 4: REVIEW -->
+  <section class="scr" id="s-review">
+    <div class="body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="chip ai">&#10022; AI-assisted draft</span><span class="step">Step 4 of 4</span>
+      </div>
+      <h2>Review your entry</h2>
+      <p class="sub">Your entry will be drafted here from your evidence and answers. Edit anything before saving.</p>
+      <div class="fld"><div class="k">Title</div><div class="ph">Generated from your evidence</div></div>
+      <div class="row">
+        <div class="fld" style="flex:1"><div class="k" id="rvUnitK">CPD hours</div><div class="ph">—</div></div>
+        <div class="fld" style="flex:1"><div class="k">Date</div><div class="ph">—</div></div>
+      </div>
+      <div class="fld"><div class="k" id="rvBodyK">Governing body</div><div class="ph" id="rvBodyV">HCPC</div></div>
+      <div class="fld"><div class="k">Reflection</div><div class="ph">Your answers will be turned into a reflection here.</div></div>
+
+      <p class="lbl">Attached evidence</p>
+      <div id="rvEv"></div>
+
+      <div class="attest" onclick="toggleAttest()">
+        <span class="ck" id="attestCk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+        <span class="txt">This is an accurate record of my own learning and I take responsibility for its content. AI assisted with drafting.</span>
+      </div>
+      <div class="cta" onclick="save()">Save entry</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- + ACTION SHEET -->
+<div class="sheetbg" id="sheetbg" onclick="closeSheet(event)">
+  <div class="sheet">
+    <h3>What would you like to do today, terrence?</h3>
+    <div class="o" style="background:#E8943A" onclick="toast('Prototype: Diary entry not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v16l-6-3-6 3z"/></svg> Record Diary Entry</div>
+    <div class="o" style="background:#5BA862" onclick="toast('Prototype: Reflective entry not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h6"/></svg> Record Reflective Entry</div>
+    <div class="o" style="background:#5B9BD5" onclick="startFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4l1.4 3.6L10 9 6.4 10.4 5 14 3.6 10.4 0 9l3.6-1.4z" transform="translate(2 1)"/><path d="M17 11l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></svg> Record CPD with AI</div>
+    <div class="o" style="background:#5B9BD5;opacity:.85" onclick="toast('Prototype: manual capture not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.2"/><path d="M8 6l1.5-2h5L16 6"/></svg> Capture Evidence</div>
+    <div class="o" style="background:#7E5BB5" onclick="toast('Prototype: webinars not built')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg> View Upcoming Webinars</div>
+    <div class="sheetclose" onclick="document.getElementById('sheetbg').classList.remove('open')">Cancel</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var GB={
+    HCPC:{name:'HCPC',full:'Health and Care Professions Council',unit:'CPD hours',
+      req:'HCPC needs a mixture of at least two different activity types, relevant to your practice. A 2.5% sample is audited every two years.',
+      questions:['What did you do?','How has it improved the quality of your practice?','How does this benefit service users?']},
+    NMC:{name:'NMC',full:'Nursing and Midwifery Council',unit:'CPD hours (participatory?)',
+      req:'NMC needs 35 CPD hours over 3 years (20 participatory) plus 5 written reflective accounts. Keep all details anonymous — no patient, service user or colleague identifiable.',
+      questions:['What was the nature of the activity, feedback or event?','What did you learn from it?','How will you change your practice, and how does it link to the Code?']},
+    CORU:{name:'CORU',full:'Health & Social Care Professionals Council (Ireland)',unit:'CPD credits',
+      req:'CORU needs 30 CPD credits every 12 months — one credit per hour of new or enhanced learning.',
+      questions:['What learning activity did you complete?','What did you learn, and how does it maintain or improve your competence?','How will you apply it to deliver safe, effective care?']},
+    EPRR:{name:'EPRR',full:'Emergency Preparedness, Resilience & Response',unit:'Activity hours',
+      req:'EPRR maps to the NHS EPRR Framework, Core Standards and minimum occupational standards for resilience roles.',
+      questions:['What EPRR activity did you take part in (training, exercise, incident or plan review)?','What did you learn, and which EPRR core standard or competency does it relate to?','How will it strengthen your preparedness, response or organisational resilience?']}
+  };
+
+  var state={ body:'HCPC', evidence:[], answers:['','',''], attest:false };
+  var titles={ home:'Home', gb:'Governing body', evidence:'AI Capture Evidence', questions:'Your reflection', review:'Review your entry' };
+  var stack=['home'];
+
+  function render(id){
+    document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('active')});
+    document.getElementById('s-'+id).classList.add('active');
+    var flow=(id!=='home');
+    document.getElementById('navhd').style.display=flow?'block':'none';
+    if(flow) document.getElementById('navttl').textContent=titles[id];
+    window.scrollTo(0,0);
+  }
+  function go(id){ stack.push(id); enter(id); render(id); }
+  function back(){ if(stack.length>1){ stack.pop(); render(stack[stack.length-1]); } }
+  function home(){ stack=['home']; render('home'); }
+
+  function enter(id){
+    if(id==='gb'){ resetGb(); }
+    if(id==='evidence'){ document.getElementById('evBody').textContent=state.body; renderEv(); }
+    if(id==='questions'){ renderQ(); }
+    if(id==='review'){ renderReview(); }
+  }
+
+  function openSheet(){document.getElementById('sheetbg').classList.add('open')}
+  function closeSheet(e){if(e.target.id==='sheetbg')document.getElementById('sheetbg').classList.remove('open')}
+
+  function startFlow(){
+    document.getElementById('sheetbg').classList.remove('open');
+    state={ body:'HCPC', evidence:[], answers:['','',''], attest:false };
+    stack=['home']; go('gb');
+  }
+
+  /* STEP 1 */
+  function resetGb(){
+    document.getElementById('gbQ').textContent='Is HCPC your intended governing body for this entry?';
+    document.getElementById('gbNoteTxt').textContent=GB.HCPC.req;
+    document.getElementById('gbPick').style.display='none';
+    document.getElementById('gbPick').innerHTML='';
+    document.getElementById('gbButtons').style.display='block';
+    document.getElementById('gbNext').style.display='none';
+    state.body='HCPC';
+  }
+  function gbYes(){ state.body='HCPC'; go('evidence'); }
+  function gbNo(){
+    document.getElementById('gbQ').textContent='Which governing body is this entry for?';
+    document.getElementById('gbButtons').style.display='none';
+    var keys=Object.keys(GB);
+    document.getElementById('gbPick').innerHTML=keys.map(function(k){
+      var g=GB[k];
+      return '<div class="opt-radio'+(state.body===k?' sel':'')+'" onclick="pickGb(\''+k+'\')"><span class="ring"></span>'+
+        '<div><div class="gn">'+g.name+'</div><div class="gf">'+g.full+'</div></div></div>';
+    }).join('');
+    document.getElementById('gbPick').style.display='block';
+    document.getElementById('gbNext').style.display='block';
+    document.getElementById('gbNoteTxt').textContent=GB[state.body].req;
+  }
+  function pickGb(k){
+    state.body=k;
+    document.getElementById('gbNoteTxt').textContent=GB[k].req;
+    document.querySelectorAll('#gbPick .opt-radio').forEach(function(el,i){
+      el.classList.toggle('sel', Object.keys(GB)[i]===k);
+    });
+  }
+
+  /* STEP 2 */
+  var EV={ scan:{nm:'Scanned document',svg:'<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>'},
+           file:{nm:'Attached file.pdf',svg:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>'} };
+  function addEv(t){ state.evidence.push({type:t,nm:EV[t].nm,id:Date.now()+''+Math.floor(Math.random()*999)}); renderEv(); toast('Evidence added'); }
+  function delEv(id){ state.evidence=state.evidence.filter(function(x){return x.id!==id}); renderEv(); }
+  function renderEv(){
+    var el=document.getElementById('evList');
+    if(!state.evidence.length){ el.innerHTML='<div class="empty">Nothing yet — scan a document or attach a file above.</div>'; return; }
+    el.innerHTML=state.evidence.map(function(e){
+      return '<div class="item"><svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'+EV[e.type].svg+'</svg>'+
+        '<div class="meta"><div class="nm">'+e.nm+'</div><div class="mn">'+(e.type==='scan'?'Scan':'File')+'</div></div>'+
+        '<svg class="del" onclick="delEv(\''+e.id+'\')" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></div>';
+    }).join('');
+  }
+  function goQuestions(){ if(!state.evidence.length){ toast('Add at least one piece of evidence'); return; } go('questions'); }
+
+  /* STEP 3 */
+  var SAMPLE=['Spoken answer captured and transcribed here…','Spoken answer captured and transcribed here…','Spoken answer captured and transcribed here…'];
+  function renderQ(){
+    var g=GB[state.body];
+    document.getElementById('qBody').textContent=g.name;
+    document.getElementById('qList').innerHTML=g.questions.map(function(q,i){
+      var ans=state.answers[i];
+      var done=ans?'<div class="answered"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg> Answered</div>':'';
+      return '<div class="qcard"><p class="q">'+(i+1)+' &middot; '+q+'</p>'+done+
+        '<button class="micbtn" onclick="speak('+i+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg> Speak</button>'+
+        '<textarea placeholder="…or type your answer" oninput="state.answers['+i+']=this.value">'+ans+'</textarea></div>';
+    }).join('');
+  }
+  function speak(i){ state.answers[i]=SAMPLE[i]; renderQ(); toast('Transcribed from voice'); }
+
+  /* STEP 4 */
+  function renderReview(){
+    var g=GB[state.body];
+    document.getElementById('rvBodyV').textContent=g.name+' — '+g.full;
+    document.getElementById('rvUnitK').textContent=g.unit;
+    document.getElementById('attestCk').classList.remove('on'); state.attest=false;
+    var ev=document.getElementById('rvEv');
+    if(!state.evidence.length){ ev.innerHTML='<div class="empty">No evidence attached.</div>'; return; }
+    ev.innerHTML=state.evidence.map(function(e){
+      return '<div class="item"><svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'+EV[e.type].svg+'</svg>'+
+        '<div class="meta"><div class="nm">'+e.nm+'</div><div class="mn">Attached to this entry</div></div>'+
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34A864" stroke-width="2.4"><path d="M5 12l4 4L19 7"/></svg></div>';
+    }).join('');
+  }
+  function toggleAttest(){ state.attest=!state.attest; document.getElementById('attestCk').classList.toggle('on',state.attest); }
+  function save(){ if(!state.attest){ toast('Tick the responsibility box to save'); return; } toast('Entry saved to your portfolio'); setTimeout(home,700); }
+
+  var tT;
+  function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tT); tT=setTimeout(function(){t.classList.remove('show')},1800); }
+</script>
+</body>
+</html>
